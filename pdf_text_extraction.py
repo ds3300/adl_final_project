@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sat Dec 19 15:06:12 2020
-
-@author: ds3300
-"""
-
 from pdf2image import convert_from_path, convert_from_bytes
 from IPython.display import display, Image
 import matplotlib.pyplot as plt
@@ -21,14 +14,8 @@ from google.colab.patches import cv2_imshow
 import cv2
 import re
 
-
-def test():
-    x = 'hello'
-    return(x)
-
 def convert_pdf_to_jpegs(pdf_file_name):
 
-    #pdf_name = 'Southampton 473605_2_all_pgs.pdf'
     if "pdf_sheets" not in os.listdir("/content"):
         print('Making directory /content/pdf_sheets')
         os.mkdir("/content/pdf_sheets")
@@ -56,21 +43,6 @@ def convert_pdf_to_image(fn, width, height):
     for i in range(len(images)):
         images_i = images[i].convert('L')
         images[i] = images_i
-    #display(images[0])
-
-    # Save as jpeg
-    #img.save('img','jpeg')
-
-    #img = Image.open('img').convert('L')
-
-    # Read in as tensor
-    #img_raw = tf.io.read_file('./img')
-    #img_raw = tf.image.decode_jpeg(img_raw, channels=3)
-
-    # Convert to grayscale - text color isn't really important
-    #img_raw = tf.image.rgb_to_grayscale(img_raw)
-    #img_raw = tf.image.adjust_contrast(img_raw, 10)
-    #img_raw = tf.reshape(img_raw, [3400, 4400])
 
     return images
 
@@ -114,38 +86,29 @@ def crop_img_rows(img_raw, row_starts):
     # to crop the last row in the sheet
     med_row_height = np.median((np.ediff1d(row_starts)))
     final_crop_end = med_row_height + row_starts[-1]
-    #print('final_crop_end: '+str(final_crop_end))
-    row_starts=np.append(row_starts, final_crop_end.astype(int))
-    #print(row_starts)
     
+    row_starts=np.append(row_starts, final_crop_end.astype(int))
+        
     img_crop_l = []
     
     for i in range(len(row_starts)-1):
         crop_start = row_starts[start_idx]
-        #print(crop_start)
         # Determine which pixel row is completeley blank, which 
         # represents the end of the horizontal line.
         if crop_start+25 <= img_raw.shape[0]:
-            #print('TRUE')
             for h in range(crop_start, crop_start+25):
-                #print(h)
                 if np.mean(img_raw[h,:]) >= 250:
                     crop_start = h
-        #print('row_starts[stop_idx] '+ str(row_starts[stop_idx]))
         crop_end = row_starts[stop_idx] - 1
-        #print("crop_start:"+str(crop_start)+'; crop_end'+str(crop_end))
         img_crop_i = img_raw[crop_start:crop_end,:]
-        #display(Image.fromarray(img_crop_i))
-        #print('mean length:'+str(len(np.mean(img_crop_i,1))))
-
+        
         # Ensure that the horizontal bar has been cropped out
         #assert np.mean(img_crop_i,1)[0] == 255.0
 
         img_crop_l.append(img_crop_i)
         start_idx += 1
         stop_idx += 1
-        #print('start_idx: '+str(start_idx)+'; stop_idx: '+str(stop_idx))
-    
+            
     return img_crop_l
 
 def identify_header_row(row_starts):
@@ -195,7 +158,6 @@ def get_col_starts(header_row_raw, cutoff, window_width=100, lpad=100,
         window_start = i-window_width
         window_end = i
         window_mean = np.mean(header_row_mean[window_start:window_end])
-        #print(window_mean)
         if window_mean < cutoff and prev_window_mean >= cutoff:
             col_start_l.append(window_end)
         prev_window_mean = window_mean
@@ -249,8 +211,6 @@ def tighten_img_crop(row_col_cell):
     assert top_crop_idx >= 0
     assert right_crop_idx <= row_col_cell.shape[1]
     assert bottom_crop_idx <= row_col_cell.shape[0]
-
-    #print((top_crop_idx,bottom_crop_idx,left_crop_idx,right_crop_idx))
     
     cropped_cell = row_col_cell[top_crop_idx:bottom_crop_idx, 
                                 left_crop_idx:right_crop_idx]
@@ -293,7 +253,6 @@ def split_cell_into_lines(row_col_cell, cutoff=250):
     median_line_start_diff = np.median(line_starts_diffs)
     print(line_starts_diffs)
     print(line_starts)
-    #line_starts=line_starts[np.abs(line_starts_diffs-median_line_start_diff)<=10]
     bool_mask=np.abs(line_starts_diffs-median_line_start_diff)<=10
 
     #TODO this logic needs to be reworked.
@@ -304,8 +263,6 @@ def split_cell_into_lines(row_col_cell, cutoff=250):
     line_starts = line_starts[bool_mask]
     line_starts = np.append(line_starts, [0])
     line_starts.sort()
-    #line_starts=line_starts[:-1]   
-    print(line_starts)
 
     # Split up row/cell by line starts
 
@@ -339,8 +296,6 @@ def crop_img_cols(img_rows, col_starts, left_buffer):
         row_r_dict = {}
 
         for i in range(len(col_starts)):
-            #print('start_idx',start_idx)
-            #print('stop_idx',stop_idx)
             crop_start = col_starts[start_idx]-left_buffer
             
             if stop_idx > len(col_starts)-1:
@@ -353,10 +308,6 @@ def crop_img_cols(img_rows, col_starts, left_buffer):
             # Crop the row/col cell
             row_col_i = tighten_img_crop(row_col_cell=row_col_i)
             
-            # TODO insert function to split up the row/col cell
-            # by line
-            #row_col_i = split_cell_into_lines(row_col_cell=row_col_i)
-
             col_i_name = 'col'+str(i)
 
             row_r_dict.update({col_i_name : row_col_i})
@@ -382,7 +333,6 @@ def extract_row_cols(img_rows, row_starts):
     # Determine the column starts based on the pixels of the header row
     # Add a buffer to cut out the horizontal line
 
-    #display(Image.fromarray(img_rows[header_idx][40:-20,:]))
     col_starts=get_col_starts(header_row_raw=img_rows[header_idx][40:-20,:], cutoff=255)
 
     # Return a list of dictionaries, representing a row and its columns
@@ -416,26 +366,15 @@ def extract_img_rows_and_cols(pdf_sheet_dir, cutoff):
         sys.stdout.write(progress_msg)
         sys.stdout.flush()
         sheet_fn = os.path.join(pdf_sheet_dir, pdf_sheets[i])
-        #print(sheet_fn)
         sheet = Image.open(sheet_fn).convert('L')
         sheet = np.array(sheet)
-        #print(type(sheet))
-        #images_i = images[i].convert('L')
         img_raw_l.append(sheet)
-    #display(images[0])
+    
     print('\n')
-    # Save as jpeg
-    #img.save('img','jpeg')
-
-    #img = Image.open('img').convert('L')
-
+    
     image_l = []
 
     for i in range(len(img_raw_l)):
-        """
-        if i == 0:
-            display(Image.fromarray(img_raw_l[i]))
-        """
         progress_msg = '\rExtracting image rows and columns ('+str(i+1)+'/'+str(len(img_raw_l))+')'
         sys.stdout.write(progress_msg)
         sys.stdout.flush()
@@ -443,43 +382,10 @@ def extract_img_rows_and_cols(pdf_sheet_dir, cutoff):
         img_raw_i = remove_footer(img_raw_i)
         row_starts, img_rows = extract_img_rows(img_raw_i, cutoff)
 
-        """
-        if i == 0:
-            display(Image.fromarray(img_rows[1]))
-        """
-        #print('row starts: ',row_starts)
-        # TODO columns aren't getting extracted - col0 is just the whole row
         img_rows = extract_row_cols(img_rows=img_rows, row_starts=row_starts)
-        """
-        print(type(img_rows))
-        print(len(img_rows))
-        print(type(img_rows[0]))
-        print(img_rows[0].keys())
-        if i == 0:
-            display(Image.fromarray(img_rows[1].get('col0')))
-        """
         image_l.append(img_rows)
 
     return image_l
-
-# -*- coding: utf-8 -*-
-"""
-Created on Sat Dec 19 15:22:24 2020
-
-@author: ds3300
-"""
-
-"""## Bounding Box PDF Text"""
-
-# TODO Bounding Box
-# TODO Take advanage of the fixed width font to crop the lines vertically 
-# by very high pixel value (i.e. blank or nearly blank), then crop the letters 
-# horizontally by very high pixel value
-
-
-def test2():
-    x = 'hello'
-    return x
 
 def get_char_contours(img):
     
@@ -487,9 +393,6 @@ def get_char_contours(img):
     Return the coutours of the images
     source: https://stackoverflow.com/questions/50777688/finding-contours-with-lines-of-text-in-opencv
     """
-    
-    #edges = cv2.Canny(image=img, threshold1=150, threshold2=200)
-    #contours = cv2.findContours(edges.copy(), cv2.RETR_EXTERNAL , cv2.CHAIN_APPROX_NONE)
 
     ret,thresh = cv2.threshold(img, 0, 255,cv2.THRESH_OTSU|cv2.THRESH_BINARY_INV)
     
@@ -606,45 +509,29 @@ def resize_img_letter(letter_img, img_height, img_width):
         nrows_to_remove = letter_img_h - img_height
         nrows_to_remove_top = int(np.floor(nrows_to_remove/2))
         nrows_to_remove_bottom = int(np.ceil(nrows_to_remove/2))
-        #print(str(nrows_to_remove_top)+';'+str(nrows_to_remove_bottom))
         letter_img_mod = letter_img_mod[nrows_to_remove_top:(-1*nrows_to_remove_bottom), :]
-        #display(Image.fromarray(letter_img_mod))
     elif letter_img_h < img_height:
         nrows_to_add = img_height - letter_img_h
         nrows_to_add_top = int(np.floor(nrows_to_add/2))
         nrows_to_add_bottom = int(np.ceil(nrows_to_add/2))
-        #print(str(nrows_to_add_top)+';'+str(nrows_to_add_bottom))
-        #print('add on top:'+str(np.full(shape=(nrows_to_add_top, letter_img_w), fill_value=255.0).shape))
-        #print(letter_img.shape)
-        #print('add on bottom:'+str(np.full(shape=(nrows_to_add_bottom, letter_img_w), fill_value=255.0).shape))
         letter_img_mod = np.concatenate((np.full(shape=(nrows_to_add_top, letter_img_w), fill_value=255.0),
                                    letter_img_mod,
                                    np.full(shape=(nrows_to_add_bottom, letter_img_w), fill_value=255.0)),
                                   axis = 0)
-        #print(letter_img_mod.shape)
-        #display(Image.fromarray(letter_img_mod).convert('RGB'))      
 
     if letter_img_w > img_width:
         ncols_to_remove = letter_img_w - img_width
         ncols_to_remove_left = int(np.floor(ncols_to_remove/2))
         ncols_to_remove_right = int(np.ceil(ncols_to_remove/2))
-        #print(str(ncols_to_remove_left)+';'+str(ncols_to_remove_right))
         letter_img_mod = letter_img_mod[:, ncols_to_remove_left:(-1*ncols_to_remove_right)]
-        #display(Image.fromarray(letter_img_mod))
     elif letter_img_w < img_width:
         ncols_to_add = img_width - letter_img_w
         ncols_to_add_left = int(np.floor(ncols_to_add/2))
         ncols_to_add_right = int(np.ceil(ncols_to_add/2))
-        #print(str(ncols_to_add_left)+';'+str(ncols_to_add_right))
-        #print('add on top:'+str(np.full(shape=(nrows_to_add_top, letter_img_w), fill_value=255.0).shape))
-        #print(letter_img.shape)
-        #print('add on bottom:'+str(np.full(shape=(nrows_to_add_bottom, letter_img_w), fill_value=255.0).shape))
         letter_img_mod = np.concatenate((np.full(shape=(img_height, ncols_to_add_left), fill_value=255.0),
                                    letter_img_mod,
                                    np.full(shape=(img_height, ncols_to_add_right), fill_value=255.0)),
                                   axis = 1)
-        #print(letter_img_mod.shape)
-        #display(Image.fromarray(letter_img_mod).convert('RGB'))
 
     return letter_img_mod
 
@@ -683,17 +570,14 @@ def sort_bb_coords(bb_coords, img, max_height, max_width,
     for i in range(len(bb_coords)):
         coord_dict = {"coord":bb_coords[i], 'dist':distance_l[i]}
         unassigned_bb.append(coord_dict)
-    #print('unassigned_bb len:', len(unassigned_bb))
     # Initialize the dictionary to store all of the lines
     line_dict = {}
     key_idx=0
     counter = 0
 
     while len(unassigned_bb) > 0:
-        #print('new line')
         counter += 1
         if counter >= 100:
-            #print('counter > 100')
             break
         # Identify which of the remaining items in unassigned_bb has the 
         # shortest distance to (0,0)
@@ -705,12 +589,8 @@ def sort_bb_coords(bb_coords, img, max_height, max_width,
             if dist < shortest_dist:
                 shortest_dist = dist
                 shortest_dist_idx = i
-        
-        #print(shortest_dist)
-        #print(shortest_dist_idx)
 
         first_letter = unassigned_bb[shortest_dist_idx].get('coord')
-        #print('first letter', first_letter)
         
         line_i = []
         remove_idxs = []
@@ -725,10 +605,8 @@ def sort_bb_coords(bb_coords, img, max_height, max_width,
             # then append it to the list
 
             if coord[1] <= first_letter[3]:
-            #if coord[1] >= first_letter[3]:
                 line_i.append(coord)
                 remove_idxs.append(i)
-        #print('remove_idxs:',remove_idxs)
 
         # Sort and reverse the list to remove items going from the back of 
         # the list to the front.
@@ -744,7 +622,6 @@ def sort_bb_coords(bb_coords, img, max_height, max_width,
         # a data frame.
         line_df = pd.DataFrame(np.array(line_i))
         line_df = line_df.sort_values(by=0)
-        #print(line_df)
 
         if line_df.shape[0] < 1:
             continue
@@ -754,12 +631,8 @@ def sort_bb_coords(bb_coords, img, max_height, max_width,
         #   the largest righthand and bottom coordinates
         whole_line_bb = (line_df.iloc[:,0].min(), line_df.iloc[:,1].min(),
                          line_df.iloc[:,2].max(), line_df.iloc[:,3].max())
-        #print('whole_line_bb: ', whole_line_bb)
         whole_line_array = img[whole_line_bb[1]:whole_line_bb[3],
                                whole_line_bb[0]:whole_line_bb[2]]
-        #display(Image.fromarray(whole_line_array))
-        # TODO use the get_col_starts function to get the starts of the words
-        # in each line
         line_word_starts = get_col_starts(whole_line_array, cutoff=255, 
                                           window_width=40,lpad=0, 
                                           use_row_midsection=True)
@@ -769,48 +642,32 @@ def sort_bb_coords(bb_coords, img, max_height, max_width,
         # so that the final stop_idx has a value
         line_word_starts.append(line_df.iloc[:,2].max())
         line_word_starts.sort()
-        #print(line_word_starts)
 
         # Crop each word in each line and append to a list
         line_words = []
         for i in range(len(line_word_starts)-1):
             start_idx = line_word_starts[i]
             stop_idx = line_word_starts[i+1]
-            #print('start_idx:'+str(start_idx)+"; stop_idx:"+str(stop_idx))
             line_word = tighten_img_crop(whole_line_array[:, start_idx:stop_idx-1])
             line_words.append(line_word)
 
         # Extract each letter from each word in each line and maintain sort
         # Data structure: [[A,l,a,n], [B,r,o,d,y]]
-        # TODO there is 1/0 pixel distance between some adjacent letters
         
         line_words_letters = []
         for i in range(len(line_words)):
-            """word_i = line_words[i]
-            line_words_letter_starts = get_col_starts(word_i, cutoff=255, window_width=5,lpad=0)
-            line_words_letter_starts.append(0)
-            line_words_letter_starts.append(word_i.shape[1])
-            line_words_letter_starts.sort()
-            line_word_i_letters = []"""
             word_i = line_words[i]
             contour_l = get_char_contours(img=word_i)
             bb_coord_l = make_bb_coord_l(contour_l=contour_l, img=word_i,
                                          IMG_HEIGHT=IMG_HEIGHT)
             bb_array = np.array(bb_coord_l)
-            #bb_array=bb_array[abs(bb_array[:,0]-bb_array[:,2])*abs(bb_array[:,1]-bb_array[:,3]) >= 1000]
-            #erase_contours = bb_array[np.where((abs(bb_array[:,0]-bb_array[:,2])*abs(bb_array[:,1]-bb_array[:,3]) < 500)&((bb_array[:,0]==0)|(bb_array[:,1]==0)))]
-            #print(bb_array)
             if bb_array.shape[0] < 1:
                 continue
             bb_array=bb_array[np.where((abs(bb_array[:,0]-bb_array[:,2])*abs(bb_array[:,1]-bb_array[:,3])>= 900))]
-            #bb_array=bb_array[np.where((abs(bb_array[:,0]-bb_array[:,2])*abs(bb_array[:,1]-bb_array[:,3])>= 500)&((bb_array[:,0]!=0)|(bb_array[:,1]!=0)))]
             bb_array=pd.DataFrame(bb_array)
             bb_array=bb_array.sort_values(by=0)
             line_word_i_letters = []
 
-            """for e in erase_contours:
-                word_i[e[1]:e[3], e[0]:e[2]]=255
-            display(Image.fromarray(word_i))"""
             for i in range(bb_array.shape[0]):
                 line_word_i_letters_i = resize_img_letter(
                     letter_img=word_i[bb_array.iloc[i,1]:bb_array.iloc[i,3],
@@ -818,10 +675,6 @@ def sort_bb_coords(bb_coords, img, max_height, max_width,
                     img_height=IMG_HEIGHT, img_width=50) #fixed
                 line_word_i_letters.append(line_word_i_letters_i)
             line_words_letters.append(line_word_i_letters)
-
-        # TODO return this list of images
-
-        #print(whole_line_bb)
 
         cropped_list = []
 
@@ -831,10 +684,8 @@ def sort_bb_coords(bb_coords, img, max_height, max_width,
             # Append a cropped image array to the list
             bb = crop_text(img=img, max_height=max_height, 
                            max_width=max_width, bb=bb)
-            #print('bb type:', type(bb))
             cropped_list.append(bb)
 
-        #print(line_i)
         key = 'line'+str(key_idx)
         line_dict.update({key:cropped_list})
         key2 = 'whole_line'+str(key_idx)
@@ -853,9 +704,6 @@ def crop_text(img, max_height, max_width, bb):
     crop the text within the bounding box to a maximum height 
     """
     bb_top, bb_bottom, bb_left, bb_right = bb[1], bb[3], bb[0], bb[2]
-    #bb_height = bb_bottom - bb_top
-    #height_adj = max_height - bb_height
-    #bb_top = bb_top - height_adj
     bb_top = bb_bottom - max_height
     bb_right = bb_left + max_width
     if bb_top <= 0:
@@ -863,8 +711,6 @@ def crop_text(img, max_height, max_width, bb):
     if bb_right >= img.shape[1]:
         bb_right = img.shape[1]
     
-    #bb = (bb[0], bb_top, bb[2], bb[3])
-
     crop_section = img[bb_top:bb_bottom, bb_left:bb_right]
 
     return crop_section
@@ -893,7 +739,6 @@ def prep_extracted_img_for_pred(extracted_img, IMG_HEIGHT, IMG_WIDTH):
     array_from_img = tf.keras.preprocessing.image.img_to_array(extracted_img)
     array_from_img = np.array(Image.fromarray(extracted_img).convert('RGB'))
     array_from_img = tf.expand_dims(array_from_img, 0)
-    #array_from_img = tf.image.resize_with_crop_or_pad(array_from_img, IMG_HEIGHT, IMG_WIDTH)
 
     array_from_img = tf.image.resize(array_from_img, size = [IMG_HEIGHT, IMG_WIDTH])
     
@@ -966,11 +811,8 @@ def get_image_text(processed_imgs, IMG_HEIGHT, IMG_WIDTH, model, labels):
                     line_words_txt_l = []
                     for w in range(len(line_words_img_l)):
                         word_img_l = line_words_img_l[w]
-                        #print(len(word_img_l))
                         letters_txt_l = []
-                        #display(Image.fromarray(word_img[0]).convert('RGB'))
                         word_img_batch = assemble_pred_batch(word_img_l, IMG_HEIGHT=IMG_HEIGHT, IMG_WIDTH=IMG_WIDTH)
-                        #print('word_img_batch length:'+str(len(word_img_batch)))
                         if len(word_img_batch) == 0:
                             continue
                         preds = model.predict(word_img_batch)
@@ -979,10 +821,7 @@ def get_image_text(processed_imgs, IMG_HEIGHT, IMG_WIDTH, model, labels):
                         pred_concat=''.join(list((pred_labels.iloc[:,0])))
                         line_words_txt_l.append(pred_concat)
                     key_text_l.append(line_words_txt_l)
-                    #print('appending to key_text_l')    
                 row_text.append(key_text_l)
-                #print('appending to row_text')
-                #print(row_text)
             sheet_text.append(row_text)
         doc_text.append(sheet_text)
     return doc_text
@@ -994,7 +833,6 @@ def reorganize_doc_text(doc_text):
             row_dict = {}
             for c in range(len(row)):
                 col = row[c]
-                #print(col)
                 # col0: Name and Address of Last Reputed Owner
                 n_lines = len(col)
                 if c == 0 and n_lines > 1:
@@ -1005,35 +843,21 @@ def reorganize_doc_text(doc_text):
                     
                     for i, line in enumerate(col):
                         concat_line = ' '.join(line)
-                        #print(concat_line)
-                        #print('len(concat_line) ', len(concat_line))
                         if re.search('\w{2}\s+\w{5}$', concat_line)!=None:
                             city_state_zip_idx = i
                     
                     # If there is an address line, extract the components
-                    #print(city_state_zip_idx)
                     if city_state_zip_idx != None:
                         city_state_zip = col[city_state_zip_idx].copy()
                         city_state_zip_full = ' '.join(col[city_state_zip_idx].copy())
-                        #print(city_state_zip_full)
-                        #for i in range(len(city_state_zip)-1,0,-1):
                         state_zip_set = set()
                         for word_i in city_state_zip:
-                            #print(word_i)
-                            #word_i=city_state_zip[i]
                             if re.search(pattern='(\w{5}$)', string=word_i)!=None:
-                                #print('adding zip')
                                 col0.update({'owner_zip':word_i})
                                 state_zip_set.add(word_i)
-                                #city_state_zip.remove(word_i)
                             elif re.search(pattern='^\w{2}$', string=word_i)!=None:
-                                #print('adding state code')
                                 col0.update({'owner_state':word_i})
                                 state_zip_set.add(word_i)
-                                #city_state_zip.remove(word_i)
-                        #print(state_zip_set)
-                        #print(set(city_state_zip))
-                        #print(set(city_state_zip).difference(state_zip_set))
 
                         # Assume anything else in this line is the city
                         city = []
@@ -1051,7 +875,6 @@ def reorganize_doc_text(doc_text):
                         key = 'owner_name'+str(i+1)   
                         val = ' '.join(owner)
                         col0.update({key:val})   
-                    #col_list.append(col0)
                     row_dict.update({'col0':col0})
                 # col1: County tax map, address, and account identifier
                 if c == 1 and n_lines > 1:
@@ -1059,7 +882,6 @@ def reorganize_doc_text(doc_text):
                     
                     for i, line in enumerate(col):
                         concat_line = ' '.join(line)
-                        #print(concat_line)
                         if re.search(pattern='ITEM\s+NO', string=concat_line, flags=re.IGNORECASE)!=None:
                             item_no_idx = i
                             col1.update({'item_no': re.findall(pattern = '\w+$', string = concat_line)[0]})
@@ -1069,14 +891,10 @@ def reorganize_doc_text(doc_text):
                         if re.search(pattern='TAX\s+CODE', string=concat_line, flags=re.IGNORECASE)!=None:
                             tax_code_idx = i
                     addr_l = []
-                    #print([item_no_idx, account_idx, tax_code_idx])
                     for i, line in enumerate(col):
                         concat_line = ' '.join(line)
-                        #print(concat_line)
                         if i not in [item_no_idx, account_idx, tax_code_idx]:
-                            #print(True)
                             addr_l.append(concat_line)
-                    #print(addr_l)
                     addr = ' '.join(addr_l)
                     col1.update({'property_addr':addr})
                     row_dict.update({'col1':col1})
@@ -1121,7 +939,6 @@ def doc_text_to_dataframe(reorganized_doc_text):
     for i, row in enumerate(reorganized_doc_text):
         flat_col_l = []
         for key, col in row.items():
-            #print(col)
             df = pd.DataFrame(col, index=[0])
             flat_col_l.append(df)
         if len(flat_col_l)>=1:
